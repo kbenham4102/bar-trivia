@@ -103,31 +103,45 @@ def display_categories(nQs, data):
     
     return None
 
-def ask_question(question):
+def ask_question(data):
     """[summary]
     
     Arguments:
-        question {str in base64 format} -- [output of data['results'][i]['question'] from the json given via API]
+        question {str in base64 format} -- [output of data['results'][i] from the json given via API]
     """
 
+    question = data['question']
+    qtype = base64.decodebytes(data['type'].encode()).decode()
     question = base64.decodebytes(question.encode()).decode()
+
+    if qtype == 'boolean':
+        print("True or False")
+    if qtype == 'multiple':
+        print("Multiple choice")
 
     print(question)
 
-    return question
+    return question, qtype
 
 
-def list_answer_choices(answers):
+def list_answer_choices(answers, corr_ans):
     """[summary]
     
     Arguments:
-        answers {list} -- list of possible answer strings in base64 format
+        answers {[type]} -- [description]
+        corr_ans {[type]} -- [description]
+    
+    Returns:
+        str -- correct label for the question a,b,c, or d
     """
-    for a in answers:
-        
-        input(base64.decodebytes(a.encode()).decode())
+    labels = ['a', 'b', 'c', 'd']
+    for i in range(len(answers)):
+        adec = base64.decodebytes(answers[i].encode()).decode()
+        input(f"{labels[i]}. {adec}")
+        if adec == corr_ans:
+            correct_label = labels[i]
 
-    return None
+    return correct_label
 
 def countdown(t):
     while t:
@@ -138,12 +152,28 @@ def countdown(t):
         t -= 1
     print('Time is up!\n\n\n\n\n')
     
+def get_team_wager(team):
+    # Function to get wager for a team and enforce integer value
+    # TODO tie in wager enforcement, no wager can be used twice per round
+
+    while True:
+        try:
+            w = int(input(f"{team} enter your wager\n"))
+            if w > 0:
+                break
+            
+        except ValueError as e:
+            print("Invalid wager entered")
+            print(e)
+
+    return w
 
 def enter_answers(team_dict):
-    #TODO have try except to handle wrong dtype
+
     for team in team_dict:
         team_dict[team]['answers'].append(input(f"{team} enter your answer\n"))
-        team_dict[team]['wagers'].append(int(input(f"{team} enter your wager\n")))
+        w = get_team_wager(team)
+        team_dict[team]['wagers'].append(w)
 
     return team_dict
 
@@ -230,25 +260,31 @@ if __name__ == "__main__":
                 bflag = True
             bflags.append(bflag)
 
-            ask_question(data['results'][j]['question'])
+            q, qtype = ask_question(data['results'][j])
             input("\n")
 
-            answers = np.array([data['results'][j]['correct_answer']] + 
-                                data['results'][j]['incorrect_answers'])
-            answers = answers[np.random.permutation(len(answers))]
+            corr_ans = base64.decodebytes(data['results'][j]['correct_answer'].encode()).decode()
 
-            # TODO make answers easier to enter with a,b,c,d designations 
-            # and enforce correct answer match
-            list_answer_choices(answers)
+            if qtype == 'boolean':
+                input("a. True")
+                input("b. False")
+                if corr_ans == "True":
+                    corr_label = 'a'
+                else:
+                    corr_label = 'b'
+            else:
+                answers = np.array([data['results'][j]['correct_answer']] + 
+                                    data['results'][j]['incorrect_answers'])
+                answers = answers[np.random.permutation(len(answers))]
+                corr_label = list_answer_choices(answers, corr_ans)
+
             countdown(args.ctdwn)
-            #TODO enforce point choices
             enter_answers(team_dict)
 
             input("\nAnd the answer is...")
 
-            corr_ans = base64.decodebytes(data['results'][j]['correct_answer'].encode()).decode()
-            print(f"***  {corr_ans}  ***\n\n\n")
-            true_answers.append(corr_ans)
+            print(f"***  {corr_label}. {corr_ans}  ***\n\n\n")
+            true_answers.append(corr_label)
 
             time.sleep(3)
 
