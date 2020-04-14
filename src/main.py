@@ -18,6 +18,14 @@ def parse_args():
 
     return args
 
+def display_rules(nQs, rounds):
+    print("Here are the rules for the game: \n")
+    print(f"1. Every team has a set of possible wagers, a wager for each of the {nQs} questions in a round\n")
+    print("2. Each wager can only be used once per round\n")
+    print("3. At the bonus round question, the wager can be between 0 and the maximum allowed\n")
+    print("4. If the bonus is correct, you get your wagered points. If not, you lose those points\n")
+    input("Shall we begin? (press Enter)")
+
 def logo_print(text, size):
 
     ShowText = text
@@ -202,12 +210,18 @@ if __name__ == "__main__":
     logo = 'WELCOME TO\nBAR TRIVIA'
     logo_print(logo, size = (70,25))
 
+    
+
     args = parse_args()
 
     assert (args.nqs - 2)%4 == 0, "Number of questions minus 2 bonus questions isn't evenly divided into 4 rounds"
 
+    
+
     qs_per_rd = int((args.nqs - 2)/4)
     rounds = [qs_per_rd, qs_per_rd + 1, qs_per_rd, qs_per_rd + 1]
+
+    display_rules(qs_per_rd, 4)
 
     team_dict = {}
     print("Lets set the team names")
@@ -219,14 +233,6 @@ if __name__ == "__main__":
         team_dict[team_name]['wagers'] = []
         team_dict[team_name]['scores'] = []
 
-    print(team_dict)
-    # rounds.append(categories[:qs_per_rd])
-    # rounds.append(categories[qs_per_rd:(2*qs_per_rd)+1])
-    # rounds.append(categories[(2*qs_per_rd)+1:(3*qs_per_rd)+1])
-    # rounds.append(categories[(3*qs_per_rd)+1:])
-
-
-    
     token = get_session_token()
     true_answers = []
     bflags = []
@@ -235,7 +241,7 @@ if __name__ == "__main__":
         if i == 0:
             difficulty = 'easy'
         elif i > 0 and i < len(rounds):
-            difficulty = np.random.choice(['medium', 'hard'])
+            difficulty = np.random.choice(['medium', 'easy'])
         else:
             difficulty = 'hard'
 
@@ -257,7 +263,12 @@ if __name__ == "__main__":
             bflag = False
             if j+1 == rounds[i] and (i == 1 or i == 3):
                 input("TIME FOR THE BONUS QUESTION!\n\n")
+                if i ==1:
+                    print("The maximum wager for this bonus is 10 pts")
+                elif i == 3:
+                    print("The maximum wager for this bonus is 20 pts")
                 bflag = True
+                time.sleep(3)
             bflags.append(bflag)
 
             q, qtype = ask_question(data['results'][j])
@@ -281,7 +292,8 @@ if __name__ == "__main__":
             countdown(args.ctdwn)
             enter_answers(team_dict)
 
-            input("\nAnd the answer is...")
+            print("\nAnd the answer is...")
+            time.sleep(3)
 
             print(f"***  {corr_label}. {corr_ans}  ***\n\n\n")
             true_answers.append(corr_label)
@@ -289,12 +301,13 @@ if __name__ == "__main__":
             time.sleep(3)
 
             if j+1 < rounds[i]:
-                input("Are you ready for the next question?\n\n")
+                input("Are you ready for the next question? (Press Enter to continue...)\n\n")
             else:
-                input(f"Thats the end of Round {i+1}!")
+                input(f"Thats the end of Round {i+1}! Press Enter to continue...")
         
         if i == 1 or i ==3:
             get_team_scores(team_dict, true_answers, bflags)
+            input("Press enter to continue...")
 
     
 
